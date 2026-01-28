@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #FFB3BA 0%, #BFDBF7 50%, #BAE1D3 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 动态跳动的数字背景 */
+        .floating-numbers {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-number {
+            position: absolute;
+            font-size: 2em;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.3);
+            animation: float 4s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.3;
+            }
+            50% {
+                transform: translateY(-30px) rotate(5deg);
+                opacity: 0.6;
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #FF9A9E;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .game-info {
+            background: linear-gradient(135deg, #FFF0F5 0%, #E8F4F8 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .range {
+            font-size: 1.3em;
+            color: #FF9A9E;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .current-range {
+            font-size: 0.9em;
+            color: #93C5FD;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(147, 197, 253, 0.1);
+            border-radius: 8px;
+            transition: all 0.5s ease;
+        }
+
+        .attempts {
+            margin-top: 10px;
+            color: #BAE1D3;
+            font-size: 1.1em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #FFB3BA;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #FFB3BA 0%, #BFDBF7 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 179, 186, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .message.hint {
+            background: #FFFFEA;
+            color: #D4A574;
+        }
+
+        .message.success {
+            background: #D4F4DD;
+            color: #4A9B5E;
+            font-size: 1.3em;
+        }
+
+        .message.error {
+            background: #FFE4E1;
+            color: #E07B7B;
+        }
+
+        .restart-btn {
+            margin-top: 15px;
+            background: linear-gradient(135deg, #BAE1D3 0%, #DCD6F7 100%);
+        }
+
+        .emoji {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 彩带庆祝效果 */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            top: -20px;
+            animation: confetti-fall linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(0) rotateZ(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotateZ(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* 成功时的放大动画 */
+        .success-animation {
+            animation: success-bounce 0.6s ease-out;
+        }
+
+        @keyframes success-bounce {
+            0%, 100% {
+                transform: scale(1);
+            }
+            25% {
+                transform: scale(1.2);
+            }
+            50% {
+                transform: scale(0.9);
+            }
+            75% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* 成功时容器的闪光效果 */
+        .container.celebrate {
+            animation: celebrate-glow 1.5s ease-in-out;
+        }
+
+        @keyframes celebrate-glow {
+            0%, 100% {
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            }
+            50% {
+                box-shadow: 0 20px 80px rgba(255, 215, 0, 0.6),
+                            0 0 40px rgba(255, 182, 193, 0.8);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态跳动的数字背景 -->
+    <div class="floating-numbers" id="floatingNumbers"></div>
+
+    <!-- 彩带容器 -->
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <div class="container" id="gameContainer">
+        <div class="emoji">🎮</div>
+        <h1>猜数字游戏</h1>
+        <p class="subtitle">我已经想好了一个数字，快来猜猜看吧！</p>
+
+        <div class="game-info">
+            <div class="range">数字范围：1 - 100</div>
+            <div class="current-range" id="currentRange">💡 当前范围：1 - 100</div>
+            <div class="attempts">已尝试：<span id="attemptCount">0</span> 次</div>
+        </div>
+
+        <div class="input-group">
+            <input
+                type="number"
+                id="guessInput"
+                placeholder="请输入你猜的数字"
+                min="1"
+                max="100"
+                autofocus
+            >
+        </div>
+
+        <button id="guessBtn" onclick="makeGuess()">猜一猜</button>
+
+        <div id="message" class="message" style="opacity: 0;"></div>
+
+        <button id="restartBtn" class="restart-btn hidden" onclick="restartGame()">再玩一次</button>
+    </div>
+
+    <script>
+        let secretNumber = Math.floor(Math.random() * 100) + 1;
+        let attempts = 0;
+        let gameOver = false;
+        let minRange = 1;
+        let maxRange = 100;
+
+        const guessInput = document.getElementById('guessInput');
+        const guessBtn = document.getElementById('guessBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const message = document.getElementById('message');
+        const attemptCount = document.getElementById('attemptCount');
+        const currentRange = document.getElementById('currentRange');
+        const gameContainer = document.getElementById('gameContainer');
+        const confettiContainer = document.getElementById('confettiContainer');
+
+        // 创建彩带庆祝效果
+        function createConfetti() {
+            const colors = ['#FFB3BA', '#BFDBF7', '#BAE1D3', '#FFC3A0', '#FF677D', '#D4A5A5', '#FFFFBA', '#DCD6F7'];
+            const confettiCount = 150;
+
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+
+                // 随机颜色
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+                // 随机位置
+                confetti.style.left = Math.random() * 100 + '%';
+
+                // 随机延迟
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+
+                // 随机持续时间
+                confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+
+                // 随机大小
+                const size = 5 + Math.random() * 10;
+                confetti.style.width = size + 'px';
+                confetti.style.height = size * 2 + 'px';
+
+                confettiContainer.appendChild(confetti);
+            }
+
+            // 3秒后清除彩带
+            setTimeout(() => {
+                confettiContainer.innerHTML = '';
+            }, 4000);
+        }
+
+        // 触发成功庆祝
+        function celebrate() {
+            // 添加容器闪光效果
+            gameContainer.classList.add('celebrate');
+
+            // 消息框添加弹跳动画
+            message.classList.add('success-animation');
+
+            // 创建彩带
+            createConfetti();
+
+            // 0.3秒后再来一波彩带，更密集
+            setTimeout(() => {
+                createConfetti();
+            }, 300);
+
+            // 清除动画类
+            setTimeout(() => {
+                gameContainer.classList.remove('celebrate');
+                message.classList.remove('success-animation');
+            }, 1500);
+        }
+
+        // 创建动态跳动的数字背景
+        function createFloatingNumbers() {
+            const container = document.getElementById('floatingNumbers');
+            const numbers = Array.from({length: 20}, (_, i) => i * 5 + 1);
+
+            numbers.forEach((num, index) => {
+                const numberDiv = document.createElement('div');
+                numberDiv.className = 'floating-number';
+                numberDiv.textContent = num;
+                numberDiv.style.left = `${Math.random() * 100}%`;
+                numberDiv.style.top = `${Math.random() * 100}%`;
+                numberDiv.style.animationDelay = `${Math.random() * 4}s`;
+                numberDiv.style.animationDuration = `${3 + Math.random() * 3}s`;
+                container.appendChild(numberDiv);
+            });
+        }
+
+        // 初始化背景数字
+        createFloatingNumbers();
+
+        // 按回车键提交
+        guessInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                makeGuess();
+            }
+        });
+
+        function updateRange() {
+            currentRange.textContent = `💡 当前范围：${minRange} - ${maxRange}`;
+            currentRange.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                currentRange.style.transform = 'scale(1)';
+            }, 300);
+        }
+
+        function makeGuess() {
+            if (gameOver) return;
+
+            const guess = parseInt(guessInput.value);
+
+            // 验证输入
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                showMessage('请输入1到100之间的数字！', 'error');
+                return;
+            }
+
+            // 验证是否在当前范围内
+            if (guess < minRange || guess > maxRange) {
+                showMessage(`请输入 ${minRange} 到 ${maxRange} 之间的数字！`, 'error');
+                return;
+            }
+
+            attempts++;
+            attemptCount.textContent = attempts;
+
+            // 判断猜测结果
+            if (guess < secretNumber) {
+                minRange = guess + 1;
+                updateRange();
+                showMessage(`📉 太小了！试试 ${minRange} 到 ${maxRange} 之间的数字`, 'hint');
+            } else if (guess > secretNumber) {
+                maxRange = guess - 1;
+                updateRange();
+                showMessage(`📈 太大了！试试 ${minRange} 到 ${maxRange} 之间的数字`, 'hint');
+            } else {
+                // 猜对了
+                gameOver = true;
+                showMessage(`🎉 恭喜你猜对了！答案是 ${secretNumber}，你用了 ${attempts} 次！`, 'success');
+
+                // 触发庆祝动画
+                celebrate();
+
+                guessInput.disabled = true;
+                guessBtn.disabled = true;
+                restartBtn.classList.remove('hidden');
+            }
+
+            // 清空输入框并聚焦
+            guessInput.value = '';
+            guessInput.focus();
+        }
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = 'message ' + type;
+            message.style.opacity = '1';
+        }
+
+        function restartGame() {
+            // 重置游戏
+            secretNumber = Math.floor(Math.random() * 100) + 1;
+            attempts = 0;
+            gameOver = false;
+            minRange = 1;
+            maxRange = 100;
+
+            // 重置界面
+            attemptCount.textContent = '0';
+            currentRange.textContent = '💡 当前范围：1 - 100';
+            guessInput.value = '';
+            guessInput.disabled = false;
+            guessBtn.disabled = false;
+            message.style.opacity = '0';
+            restartBtn.classList.add('hidden');
+            guessInput.focus();
+        }
+    </script>
+</body>
+</html>
